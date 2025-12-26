@@ -25,3 +25,6 @@ docker run -d -p 8087:8088 --name todo-container todo-api
 
 # Test
 curl http://localhost:8087/api/tasks
+
+
+echo "# Test trigger for CI/CD" >> README.md
