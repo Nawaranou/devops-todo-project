@@ -1,0 +1,11 @@
+# Fichiers à ignorer pour Docker
+target/
+!target/*.jar
+.git/
+*.iml
+.idea/
+*.log
+HELP.md
+mvnw
+mvnw.cmd
+.DS_Store
