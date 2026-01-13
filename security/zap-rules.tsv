@@ -1,0 +1,8 @@
+# OWASP ZAP Custom Rules
+# Format: alertId	pluginId	ruleId	level
+10021	40012	*	INFO	# Information Disclosure - Sensitive Information in URL
+10023	40012	*	LOW	# Source Code Disclosure
+10024	40012	*	MEDIUM	# Directory Browsing
+10054	40012	*	HIGH	# Cross-Domain Misconfiguration
+10105	40012	*	MEDIUM	# Vulnerable JS Library
+10202	40012	*	HIGH	# Absence of Anti-CSRF Tokens

@@ -2,6 +2,7 @@ package com.devops.todo.controller;
 
 import com.devops.todo.model.Task;
 import com.devops.todo.repository.TaskRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,16 @@ public class TaskController {
 
     @Autowired
     private TaskRepository taskRepository;
+
+    @PostConstruct
+    public void init() {
+        System.out.println("✅ TaskController initialized!");
+    }
+
+    @GetMapping("/ping")
+    public String ping() {
+        return "✅ TaskController is working!";
+    }
 
     @GetMapping
     public List<Task> getAllTasks() {
