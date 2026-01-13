@@ -1,30 +1,35 @@
-# OWASP ZAP DAST Scan Results
+## Scan Results Summary
 
-## Scan Date: 13 janvier 2026
-## Target: http://localhost:8087
-## Duration: [À compléter]
+### Risk Distribution:
+- **High Risk**: 0 ✅
+- **Medium Risk**: 1 ⚠️
+- **Low Risk**: 1
+- **Informational**: 3
 
-## Reports Generated:
-1. **HTML Report**: `reports/zap-report.html` (37,815 bytes)
-2. **JSON Report**: `reports/zap-report.json` (9,271 bytes)
-3. **XML Report**: `reports/zap-report.xml` (11,452 bytes)
-4. **Configuration**: `reports/zap.yaml` (1,055 bytes)
+### Alerts Identified:
 
-## Key Findings:
-[Ouvrez zap-report.html et résumez les découvertes importantes]
+#### 1. Medium Risk: Weak Authentication Method (Alert 10105)
+- **Description**: Basic Authentication is considered weak
+- **Location**: All protected endpoints
+- **Recommendation**: Implement stronger authentication (JWT, OAuth2)
+- **Status**: ✅ Expected for educational project
 
-## Security Status:
-- ✅ **Scan Completed Successfully**
-- ⚠️ **Warnings Found**: [nombre]
-- ❌ **High Risk Issues**: [nombre]
-- ✅ **Authentication Tested**: Basic Auth working
+#### 2. Low Risk: Cookie without SameSite Attribute (Alert 10054)
+- **Description**: Cookies missing SameSite attribute
+- **Impact**: Potential CSRF vulnerability
+- **Fix**: Configure SameSite attribute in Spring Security
 
-## Screenshots:
-- [ZAP Report Summary](screenshots/zap-report-summary.png)
-- [Vulnerability Dashboard](screenshots/zap-dashboard.png)
+#### 3. Informational: Non-Storable Content (Alert 10049)
+- **Description**: Responses marked as non-storable
+- **Status**: ✅ Expected for API responses
 
-## Next Actions:
-1. Review all medium/high risk findings
-2. Fix identified vulnerabilities
-3. Re-scan to verify fixes
-4. Integrate into CI/CD pipelinestart reports\zap-report.html
+#### 4. Informational: Session Management Response Identified (Alert 10112)
+- **Description**: Session management detected
+- **Status**: ✅ Informational only
+
+### Security Assessment:
+- ✅ **No Critical Vulnerabilities**
+- ⚠️ **1 Medium Risk** (Basic Auth - by design)
+- ✅ **Authentication Working Correctly**
+- ✅ **Authorization Enforced**
+- ✅ **API Properly Protected**
