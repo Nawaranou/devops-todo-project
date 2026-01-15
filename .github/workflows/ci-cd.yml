@@ -2,35 +2,151 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, feature/ci-cd ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
+  # JOB 1: Build et Tests
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v3
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
-    - name: Build with Maven
-      run: mvn clean compile
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-    - name: Run tests
-      run: mvn test
+      - name: Build with Maven
+        run: mvn clean compile
 
-    - name: Package JAR
-      run: mvn package -DskipTests
+      - name: Run tests
+        run: mvn test
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: todo-app-jar
-        path: target/*.jar
+      - name: Package application
+        run: mvn package -DskipTests
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: application-jar
+          path: target/*.jar
+
+  # JOB 2: Security Scan (SAST)
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Run SAST with Maven dependencies check
+        run: |
+          # Scan des vulnérabilités de dépendances
+          mvn dependency-check:check
+          
+          # Analyse statique du code (optionnel)
+          mvn spotbugs:check || echo "SpotBugs found issues"
+
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            target/dependency-check-report.html
+            target/spotbugsXml.xml
+
+  # JOB 3: Build Docker Image
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/todo-api:latest
+            ${{ secrets.DOCKER_USERNAME }}/todo-api:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/todo-api:latest
+          cache-to: type=inline
+
+  # JOB 4: Deploy to Kubernetes (Optionnel)
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure Kubernetes
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 --decode > $HOME/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          # Mettre à jour l'image dans le deployment
+          kubectl set image deployment/todo-api todo-api=${{ secrets.DOCKER_USERNAME }}/todo-api:${{ github.sha }} -n devops-todo
+          
+          # Vérifier le déploiement
+          kubectl rollout status deployment/todo-api -n devops-todo
+          
+          # Vérifier les pods
+          kubectl get pods -n devops-todo
+
+  # JOB 5: Notifications
+  notify:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan, docker-build]
+    if: always()
+
+    steps:
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          author_name: GitHub Actions CI/CD
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

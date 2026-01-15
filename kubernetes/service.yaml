@@ -8,6 +8,6 @@ spec:
     app: todo-api
   ports:
     - port: 80
-      targetPort: 8088
+      targetPort: 8090
       nodePort: 30080
   type: NodePort

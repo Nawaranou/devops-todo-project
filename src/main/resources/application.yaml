@@ -1,19 +1,129 @@
 ﻿server:
-  port: 8088
+  port: 8090
 
+spring:
+  application:
+    name: todo-api
+
+  # Configuration de la base de données H2
+  datasource:
+    url: jdbc:h2:mem:tododb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # Sleuth pour le tracing (AJOUT)
+  sleuth:
+    enabled: true
+    sampler:
+      probability: 1.0
+
+  # Configuration de sécurité
+  security:
+    user:
+      name: user
+      password: ${GENERATED_PASSWORD:}
+
+# Management Endpoints (Actuator) - AJOUT COMPLET
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
+      base-path: /actuator
+      path-mapping:
+        health: health
+        metrics: metrics
+        prometheus: prometheus
+
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
 
+    metrics:
+      enabled: true
+
+    prometheus:
+      enabled: true
+
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+
+    tags:
+      application: ${spring.application.name}
+
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
+          metric-name: http.server.requests
+
+# Configuration des logs - AJOUT
 logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.devops.todo: DEBUG
+    org.springframework.web: INFO
+    org.hibernate: WARN
 
-spring:
-  application:
-    name: todo-api
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} [traceId=%X{traceId:-}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+  file:
+    name: logs/todo-api.log
+
+# Info endpoint (AJOUT)
+info:
+  app:
+    name: ${spring.application.name}
+    description: "Todo API - DevOps Project"
+    version: 1.0.0
+  java:
+    version: ${java.version}
+
+    # ⭐⭐⭐ AJOUTER CES SECTIONS À LA FIN DU FICHIER ⭐⭐⭐
+
+    # Configuration Sleuth pour tracing distribué
+    spring:
+      sleuth:
+        enabled: true
+        sampler:
+          probability: 1.0 # Échantillonner 100% des traces
+        propagation:
+          type: B3 # Format de propagation
+        web:
+          enabled: true
+
+      # Configuration Zipkin (optionnel - pour visualisation)
+      zipkin:
+        base-url: http://localhost:9411
+        enabled: false  # Mettre à true si tu installes Zipkin
+        sender:
+          type: web
+
+    # Pattern de logs avec tracing
+    logging:
+      pattern:
+        level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

@@ -1,39 +1,38 @@
 package com.devops.todo.repository;
 
-
-
 import com.devops.todo.model.Task;
+import org.springframework.cloud.sleuth.annotation.NewSpan;
+import org.springframework.cloud.sleuth.annotation.SpanTag;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
 
 @Repository
-public class TaskRepository {
-    private final Map<Long, Task> tasks = new HashMap<>();
-    private final AtomicLong counter = new AtomicLong(1);
+public interface TaskRepository extends JpaRepository<Task, Long> {
 
-    public TaskRepository() {
-        save(new Task(1L, "Apprendre DevOps", false));
-        save(new Task(2L, "Faire le projet", false));
-    }
+    // ⭐ Les annotations Sleuth fonctionneront automatiquement avec Spring Data JPA
 
-    public List<Task> findAll() {
-        return new ArrayList<>(tasks.values());
-    }
+    @NewSpan("findAllTasks")
+    @Override
+    List<Task> findAll();
 
-    public Task findById(Long id) {
-        return tasks.get(id);
-    }
+    @NewSpan("findTaskById")
+    @Override
+    Optional<Task> findById(@SpanTag("task.id") Long id);
 
-    public Task save(Task task) {
-        if (task.getId() == null) {
-            task.setId(counter.getAndIncrement());
-        }
-        tasks.put(task.getId(), task);
-        return task;
-    }
+    @NewSpan("saveTask")
+    @Override
+    <S extends Task> S save(@SpanTag("task") S entity);
 
-    public void deleteById(Long id) {
-        tasks.remove(id);
-    }
+    @NewSpan("deleteTask")
+    @Transactional
+    @Override
+    void deleteById(@SpanTag("task.id") Long id);
+
+    @NewSpan("existsTask")
+    @Override
+    boolean existsById(@SpanTag("task.id") Long id);
 }

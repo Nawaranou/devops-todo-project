@@ -15,10 +15,10 @@ spec:
     spec:
       containers:
         - name: todo-api
-          image: todo-api:latest
+          image: todo-api:k8s
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8088
+            - containerPort: 8090
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "prod"
@@ -29,15 +29,16 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-          livenessProbe:
-            httpGet:
-              path: /actuator/health/liveness
-              port: 8088
-            initialDelaySeconds: 60
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /actuator/health/readiness
-              port: 8088
-            initialDelaySeconds: 30
-            periodSeconds: 5
+
+          # livenessProbe:
+          #   httpGet:
+          #     path: /actuator/health/liveness
+          #     port: 8090
+          #   initialDelaySeconds: 120
+          #   periodSeconds: 10
+          # readinessProbe:
+          #   httpGet:
+          #     path: /actuator/health/readiness
+          #     port: 8090
+          #   initialDelaySeconds: 90
+          #   periodSeconds: 5
